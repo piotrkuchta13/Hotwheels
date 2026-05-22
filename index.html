@@ -1195,6 +1195,7 @@ const COLOR_GROUPS = [
 ];
 
 const COLOR_MAP = Object.fromEntries(COLORS.map(c => [c.hex, c.name]));
+let db = JSON.parse(localStorage.getItem('hw_db') || '[]');
 let editingId = null;
 let selectedColor = COLORS[0].hex;
 let currentFilter = 'all';
