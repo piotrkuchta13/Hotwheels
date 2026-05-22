@@ -1274,8 +1274,11 @@ function getFiltered() {
   const sort = document.getElementById('sortSelect').value;
 
   const natNum = s => {
-    const m = (s || '').match(/^(\d+)/);
-    return m ? parseInt(m[1]) : 9999;
+    if (!s) return 9999;
+    // Handle "178/250" → 178, "1/5" → 1, "178" → 178
+    const clean = String(s).trim().replace(',', '.');
+    const m = clean.match(/^(\d+)/);
+    return m ? parseInt(m[1], 10) : 9999;
   };
 
   const sorters = {
@@ -1547,22 +1550,36 @@ function openScanner() {
 function handleScanResult(code) {
   if (scanner) { try { scanner.stop(); } catch(e){} }
   const res = document.getElementById('scanResult');
-  res.textContent = `Zeskanowano: ${code}`;
+  res.textContent = `✅ Zeskanowano: ${code}`;
   res.classList.add('show');
-  lookupBarcode(code);
+  // Small delay so camera stream has time to stop before confirm dialog
+  setTimeout(() => lookupBarcode(code), 600);
 }
 
 function lookupBarcode(code) {
-  if (!code) return;
+  if (!code || !code.trim()) return;
+  code = code.trim();
+
+  // Check if already in collection
   const existing = db.find(c => c.barcode === code);
   if (existing) {
     closeScanner();
-    showToast(`"${existing.name}" już jest w kolekcji!`, '');
-    openDetail(existing.id);
+    // Show the existing car detail with info that it's already in collection
+    showToast(`📦 "${existing.name}" jest już w kolekcji!`, '');
+    setTimeout(() => openDetail(existing.id), 300);
     return;
   }
+
+  // Not found — show confirmation before opening add form
   closeScanner();
-  openAddModal({ barcode: code });
+
+  // Small delay so scanner modal closes first
+  setTimeout(() => {
+    const add = confirm(`Kod: ${code}\n\nNie znaleziono tego modelu w kolekcji.\n\nCzy chcesz dodać nową pozycję z tym kodem?`);
+    if (add) {
+      openAddModal({ barcode: code });
+    }
+  }, 350);
 }
 
 function closeScanner() {
